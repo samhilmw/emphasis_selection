@@ -1,12 +1,4 @@
-# SemEval 2020 - Task 10: Emphasis Selection For Written Text in Visual Media
-
-### Team 'Corona Survivors':
-- Rishabh Agarwal
-- [Sahil Dhull](https://sahildhull.github.io/)
-- Vipul Singhal
-
-#### Under the guidance of:
-[Prof. Ashutosh Modi](https://ashutosh-modi.github.io/)
+Emphasis Selection For Written Short Text
 
 ## Installation
 ```
