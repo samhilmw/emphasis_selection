@@ -1,38 +1,41 @@
+# Redirecting Deprication Warnings to /dev/null
+import sys, platform
+
+sv_std = sys.stderr
+os_name = platform.system()
+
+if os_name == "Windows":
+    f = open('nul', 'w')
+elif os_name == "Linux":
+    f = open(os.devnull, 'w')
+sys.stderr = f
+
 # Importing modules
-import torch
+import torch, codecs, os
 from torch import nn
-from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
-from keras.preprocessing.sequence import pad_sequences
-from sklearn.model_selection import train_test_split
-
-from transformers import XLNetConfig, XLNetLMHeadModel, XLNetModel, XLNetTokenizer
-from transformers import WEIGHTS_NAME, AdamW, get_linear_schedule_with_warmup
-from transformers import PreTrainedModel, PreTrainedTokenizer , BertPreTrainedModel
-
-from tqdm import tqdm, trange
-import pandas as pd
-import io
-import numpy as np
-import matplotlib.pyplot as plt
-import codecs
 from torch.nn.utils.rnn import pack_padded_sequence
-import os
-
-from reader import *
+from torch.utils.data import TensorDataset, DataLoader, SequentialSampler
+from transformers import XLNetTokenizer
+from reader import read_test_token_map, read_for_output
 from config import *
 from model import *
 from eval_metric import *
+from keras.preprocessing.sequence import pad_sequences
+
+# Restoring sys.stderr
+sys.stderr = sv_std
+
+#test_file = "sample.txt"
 
 # Importing the tokenizer for Transformer model
 tokenizer = XLNetTokenizer.from_pretrained(model_name, do_lower_case = False)
 
-# test_out
 device = torch.device("cpu")
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # n_gpu = torch.cuda.device_count()
 # torch.cuda.get_device_name(0)
 
-# Tokenization for train, dev and test data
+# Tokenization for input data
 f_tokenized_texts, f_token_map, f_sent_length = read_test_token_map(test_file)
 f_input_ids = [tokenizer.convert_tokens_to_ids(x) for x in f_tokenized_texts]
 
@@ -65,8 +68,7 @@ model.load_state_dict(torch.load('mode.pth'))
 model.to(device)
 
 def get_pred(sample):
-  print("")
-  print("Running test...")
+  print("Running Prediction...")
 
   model.eval()
   eval_loss, eval_accuracy = 0, 0
@@ -79,11 +81,12 @@ def get_pred(sample):
     
   # Add sample to device
   sample = tuple(t.to(device) for t in sample)
-
+#   print([i for i in sample])
+#   print([i.shape for i in sample])
   # Unpack the inputs from our dataloader
   v_input_ids = sample[0].to(device)
-  v_input_mask = sample[2].to(device)
   v_token_starts = sample[1].to(device)
+  v_input_mask = sample[2].to(device)
   v_sent_length = sample[3]
     
   # Telling the model not to compute or store gradients, saving memory and speeding up
@@ -112,9 +115,7 @@ def get_pred(sample):
   return s
 
 for n, batch in enumerate(test_dataloader):
-    print(batch)
-    if n == 10:
-        sample = batch
-        break
-print(len(sample))
+    sample = batch
+    break
+
 get_pred(sample)

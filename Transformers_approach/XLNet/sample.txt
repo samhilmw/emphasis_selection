@@ -1,0 +1,22 @@
+
+S_80_0	Knit	 
+S_80_1	Doctor	 
+S_80_2	Tutorials	 
+
+S_81_0	Pop	 
+S_81_1	Up	 
+S_81_2	Shop	 
+S_81_3	!	 
+
+S_82_0	Office	 
+S_82_1	desks	 
+S_82_2	are	 
+S_82_3	overrated	 
+S_82_4	.	 
+
+S_83_0	Office	 
+S_83_1	desks	 
+S_83_2	are	 
+S_83_3	overrated	 
+S_83_4	.	 
+	
