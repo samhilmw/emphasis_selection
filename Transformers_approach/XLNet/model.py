@@ -1,4 +1,16 @@
 from config import *
+import torch.nn as nn
+from transformers import  XLNetConfig, XLNetModel
+import torch
+import numpy as np
+from torch.nn.utils.rnn import pack_padded_sequence
+
+# Checking device
+device = torch.device("cpu")
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# n_gpu = torch.cuda.device_count()
+# torch.cuda.get_device_name(0)
+
 
 class transformer_model(nn.Module):
   def __init__(self, model_name, drop_prob = dropout_prob):

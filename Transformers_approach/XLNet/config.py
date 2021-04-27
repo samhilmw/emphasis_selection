@@ -27,14 +27,14 @@ final_size = 1
 dropout_prob = 0.3
 
 # batch size for training. 
-batch_size = 32
+batch_size = 16
 
 # Optimizer parameters
 learning_rate = 2e-5
 epsilon = 1e-8
 
 
-num_epochs = 20
+num_epochs = 5
 
 max_accuracy = 0
 max_match = [0,0,0,0]
@@ -42,6 +42,6 @@ max_match = [0,0,0,0]
 val_out = ""
 test_out = ""
 
-save_path = '../runs/xlnet/'
+save_path = '../runs/xlnet/model.pth'
 # Index of the run of current model, change it after each run
 ind = 1

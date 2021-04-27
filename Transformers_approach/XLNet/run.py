@@ -18,112 +18,16 @@ import codecs
 from torch.nn.utils.rnn import pack_padded_sequence
 import os
 
+from reader import *
 from config import *
 from model import *
-from ../../eval_metric.py import *
+from eval_metric import *
 
-# Checking device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-n_gpu = torch.cuda.device_count()
-torch.cuda.get_device_name(0)
-
-# Importing the tokenizer for Transformer model
-tokenizer = XLNetTokenizer.from_pretrained(model_name, do_lower_case = False)
-
-def read_token_map(file,word_index = 1,prob_index = 4, caseless = False):
-  
-  with codecs.open(file, 'r', 'utf-8') as f:
-      lines = f.readlines()
-
-  tokenized_texts = []
-  token_map = []
-  token_labels = []
-  sent_length = []
-
-  xlnet_tokens = []
-  orig_to_tok_map = []
-  labels = []
-
-  xlnet_tokens.append("<s>")
-  
-  for line in lines:
-    if not (line.isspace()):
-      feats = line.strip().split()
-      word = feats[word_index].lower() if caseless else feats[word_index]
-      label = feats[prob_index].lower() if caseless else feats[prob_index]
-      labels.append((float)(label))
-      orig_to_tok_map.append(len(xlnet_tokens))
-      
-      if(word == "n't"):
-        word = "'t"
-        xlnet_tokens[-1] = xlnet_tokens[-1] +"n"
-
-      xlnet_tokens.extend(tokenizer.tokenize(word))
-     
-    elif len(orig_to_tok_map) > 0:
-      xlnet_tokens.append("</s>")
-      tokenized_texts.append(xlnet_tokens)
-      token_map.append(orig_to_tok_map)
-      token_labels.append(labels)
-      sent_length.append(len(labels))
-      xlnet_tokens = []
-      orig_to_tok_map = []
-      labels = []
-      length = 0
-      xlnet_tokens.append("<s>")
-          
-  if len(orig_to_tok_map) > 0:
-    xlnet_tokens.append("</s>")
-    tokenized_texts.append(xlnet_tokens)
-    token_map.append(orig_to_tok_map)
-    token_labels.append(labels)
-    sent_length.append(len(labels))
-  
-  return tokenized_texts, token_map, token_labels, sent_length
-
-def read_test_token_map(file, word_index = 1, caseless = to_case):
-  
-  with codecs.open(file, 'r', 'utf-8') as f:
-      lines = f.readlines()
-
-  tokenized_texts = []
-  token_map = []
-  sent_length = []
-
-  xlnet_tokens = []
-  orig_to_tok_map = []
-  
-  xlnet_tokens.append("<s>")
-  
-  for line in lines:
-    if not (line.isspace()):
-      feats = line.strip().split()
-      word = feats[word_index].lower() if caseless else feats[word_index]
-      orig_to_tok_map.append(len(xlnet_tokens))
-      
-      if(word == "n't"):
-        word = "'t"
-        xlnet_tokens[-1] = xlnet_tokens[-1] +"n"
-
-      xlnet_tokens.extend(tokenizer.tokenize(word))
-     
-    elif len(orig_to_tok_map) > 0:
-      xlnet_tokens.append("</s>")
-      tokenized_texts.append(xlnet_tokens)
-      token_map.append(orig_to_tok_map)
-      sent_length.append(len(orig_to_tok_map))
-      xlnet_tokens = []
-      orig_to_tok_map = []
-      length = 0
-      xlnet_tokens.append("<s>")
-          
-  if len(orig_to_tok_map) > 0:
-    xlnet_tokens.append("</s>")
-    tokenized_texts.append(xlnet_tokens)
-    token_map.append(orig_to_tok_map)
-    sent_length.append(len(orig_to_tok_map))
-  
-  return tokenized_texts, token_map, sent_length
+# test_out
+device = torch.device("cpu")
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# n_gpu = torch.cuda.device_count()
+# torch.cuda.get_device_name(0)
 
 # Tokenization for train, dev and test data
 t_tokenized_texts, t_token_map, t_token_label, t_sent_length = read_token_map(train_file)
@@ -197,36 +101,6 @@ test_data = TensorDataset(f_input_ids, f_token_map, f_attention_masks, f_sent_le
 test_sampler = SequentialSampler(test_data)
 test_dataloader = DataLoader(test_data, sampler=test_sampler, batch_size=batch_size,shuffle = False)
 
-def read_for_output(file, word_index = 1):
-  
-  with codecs.open(file, 'r', 'utf-8') as f:
-      lines = f.readlines()
-
-  words_lsts = []
-  word_ids_lsts = []
-  words = []
-  ids = []
-  
-  for line in lines:
-    if not (line.isspace()):
-      feats = line.strip().split()
-      words.append(feats[word_index])
-      ids.append(feats[0])
-     
-    elif len(words) > 0:
-      words_lsts.append(words)
-      word_ids_lsts.append(ids)
-      words = []
-      ids = []
-          
-  if len(words) > 0:
-    words_lsts.append(words)
-    word_ids_lsts.append(ids)
-    words = []
-    ids = []
-  
-  return words_lsts , word_ids_lsts
-
 dev_words, dev_word_ids = read_for_output(dev_file)
 test_words, test_word_ids = read_for_output(test_file)
 
@@ -256,7 +130,12 @@ def test(model):
             
       # Telling the model not to compute or store gradients, saving memory and speeding up
       with torch.no_grad():        
-          output = model(v_input_ids, v_input_mask, v_token_starts, v_sent_length)
+          output = model(
+            v_input_ids.to(torch.int64),
+            v_input_mask.to(torch.int64),
+            v_token_starts.to(torch.int64),
+            v_sent_length.to(torch.int64)
+          )
       
       pred_labels = output[1]
 
@@ -307,8 +186,13 @@ def validation(model):
       # Telling the model not to compute or store gradients, saving memory and
       # speeding up validation
       with torch.no_grad():        
-          output = model(v_input_ids, v_input_mask, v_token_starts, v_sent_length, v_labels)
-      
+          output = model(
+            v_input_ids.to(torch.int64),
+            v_input_mask.to(torch.int64),
+            v_token_starts.to(torch.int64), 
+            v_sent_length.to(torch.int64),
+            v_labels.to(torch.double)
+          )
       pred_labels = output[1]
 
       pred_labels = pred_labels.detach().cpu().numpy()
@@ -350,7 +234,7 @@ def train(model,  optimizer, scheduler, tokenizer, max_epochs, save_path, device
   global max_accuracy 
   global max_match 
   global val_out 
-  global test_out 
+  # global test_out 
   
   for epoch_i in range(0, max_epochs):
     print("")
@@ -374,7 +258,13 @@ def train(model,  optimizer, scheduler, tokenizer, max_epochs, save_path, device
         model.zero_grad()   
         model.train()     
 
-        output = model(b_input_ids, b_input_mask, b_token_starts,b_sent_length,b_labels)
+        output = model(
+          b_input_ids.to(torch.int64),
+          b_input_mask.to(torch.int64),
+          b_token_starts.to(torch.int64),
+          b_sent_length.to(torch.int64),
+          b_labels.to(torch.double)
+        )
         loss = output[0]
 
         total_loss += loss.item()
@@ -387,7 +277,7 @@ def train(model,  optimizer, scheduler, tokenizer, max_epochs, save_path, device
         # Update the learning rate.
         scheduler.step()
 
-        if step % 10 == 0:
+        if step % 43 == 0 and step != 0:
           accuracy, match_m, outs = validation(model)
 
           if(accuracy > max_accuracy):
@@ -395,7 +285,7 @@ def train(model,  optimizer, scheduler, tokenizer, max_epochs, save_path, device
             max_accuracy = accuracy
             max_match = match_m
             val_out = outs
-            test_out = test(model)
+            # test_out = test(model)
 
             # Saving the test output at best validation accuracy
             os.makedirs(save_path, exist_ok=True)
@@ -409,8 +299,9 @@ def train(model,  optimizer, scheduler, tokenizer, max_epochs, save_path, device
               text_file.write(test_out)
 
             # To save the model, uncomment the following lines
+            torch.save(model.state_dict(), 'mode.pth')
             # model.save_pretrained(bestpoint_dir)  
-            # print("Saving model bestpoint to ", bestpoint_dir)
+            print("Saving model bestpoint to ", 'mode.pth')
 
           print("Best accuracy = "+str(max_accuracy))
           print("")
@@ -437,7 +328,6 @@ total_steps = len(train_dataloader) * epochs
 scheduler = get_linear_schedule_with_warmup(optimizer, 
                                             num_warmup_steps = 0, # Default value in run_glue.py
                                             num_training_steps = total_steps)
+print(max_accuracy, "\n", max_match)
 
 train(model,  optimizer, scheduler, tokenizer, epochs, save_path, device)
-
-print(max_accuracy, "\n", max_match)
