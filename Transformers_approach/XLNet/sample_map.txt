@@ -1,0 +1,24 @@
+
+S_0_0	Soumya	
+S_0_1  ,	
+S_0_2	Raj	
+S_0_3	,	
+S_0_4	Sameer	
+S_0_5	are	
+S_0_6  group	
+S_0_7  members	
+S_0_8  .	
+
+S_1_0	It	
+S_1_1	is	
+S_1_2	our	
+S_1_3	nlp	
+S_1_4  project	
+S_1_5  .	
+
+S_2_0	This	
+S_2_1	is	
+S_2_2	a	
+S_2_3  good	
+S_2_4  demo	
+S_2_5  .	

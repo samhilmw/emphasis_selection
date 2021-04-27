@@ -16,6 +16,7 @@ class transformer_model(nn.Module):
   def __init__(self, model_name, drop_prob = dropout_prob):
     super(transformer_model, self).__init__()
 
+    # It is used to instantiate a XLNet model according to the specified arguments, defining the model architecture
     configuration = XLNetConfig.from_pretrained(model_name, output_hidden_states=True)
     self.xlnet = XLNetModel.from_pretrained(model_name, config = configuration)
     
@@ -58,6 +59,9 @@ class transformer_model(nn.Module):
     pred_logits = torch.relu(self.fc1(self.dropout(xlnet_out)))
     pred_logits = torch.relu(self.fc2(self.dropout(pred_logits)))
     pred_logits = torch.sigmoid(self.fc3(self.dropout(pred_logits)))
+    # torch.zeros(2, 1, 2, 1, 2)
+    # torch.squeeze(y, 1)
+    # >>> torch.Size([2, 2, 1, 2 ])
     pred_logits = torch.squeeze(pred_logits,2)
 
     pred_labels = torch.tensor(np.zeros(xlnet_token_starts.size()),dtype = torch.float64).to(device)

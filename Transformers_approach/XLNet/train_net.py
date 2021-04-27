@@ -1,3 +1,15 @@
+# Redirecting Deprication Warnings to /dev/null
+import sys, platform
+
+sv_std = sys.stderr
+os_name = platform.system()
+
+if os_name == "Windows":
+    f = open('nul', 'w')
+elif os_name == "Linux":
+    f = open(os.devnull, 'w')
+sys.stderr = f
+
 # Importing modules
 import torch
 from torch import nn
@@ -23,7 +35,9 @@ from config import *
 from model import *
 from eval_metric import *
 
-# test_out
+# Restoring sys.stderr
+sys.stderr = sv_std
+
 device = torch.device("cpu")
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # n_gpu = torch.cuda.device_count()

@@ -1,5 +1,6 @@
 # Redirecting Deprication Warnings to /dev/null
 import sys, platform
+from argparse import ArgumentParser
 
 sv_std = sys.stderr
 os_name = platform.system()
@@ -21,11 +22,30 @@ from config import *
 from model import *
 from eval_metric import *
 from keras.preprocessing.sequence import pad_sequences
+from parser_ import parse_text
+from final_output import final_output
 
 # Restoring sys.stderr
 sys.stderr = sv_std
 
-#test_file = "sample.txt"
+args = ArgumentParser()
+args.add_argument(
+        "-f",
+        "--filename",
+        required=False,
+        type=str,
+        help="Input method file or stdin",
+    )
+args = args.parse_args()
+if args.filename is not None:
+  # Read input from file
+  test_file = args.filename
+else:
+  text_data= input("Enter a short text: ")
+  result = parse_text(text_data)
+  with open("temp.txt", 'w') as f:
+    f.write(result)
+  test_file = "temp.txt"
 
 # Importing the tokenizer for Transformer model
 tokenizer = XLNetTokenizer.from_pretrained(model_name, do_lower_case = False)
@@ -105,17 +125,25 @@ def get_pred(sample):
   for i in range(v_input_ids.size()[0]):
     for j in range(len(test_words[iii])):
       if sentence_id == iii:
-        s = s + "{}\t{}\t{}\t".format(test_word_ids[iii][j], test_words[iii][j], pred_labels[i][j]) + "\n"
+        s = s + "{}\t{}\t{}\t".format(test_word_ids[iii][j], test_words[iii][j], round(pred_labels[i][j], 3)) + "\n"
       else:
-        s = s + "\n" + "{}\t{}\t{}\t".format(test_word_ids[iii][j], test_words[iii][j], pred_labels[i][j]) + "\n"
+        s = s + "\n" + "{}\t{}\t{}\t".format(test_word_ids[iii][j], test_words[iii][j], round(pred_labels[i][j], 3)) + "\n"
         sentence_id = iii
     iii = iii + 1
   s = s +"\n"
-  print(s)
+
   return s
 
 for n, batch in enumerate(test_dataloader):
     sample = batch
     break
 
-get_pred(sample)
+pred_result = get_pred(sample)
+print("Results\n")
+# print(pred_result)
+
+result_pretty = final_output(pred_result, binary=False)
+for i in zip(result_pretty[0], result_pretty[1]):
+  print(*i[0], sep='\t')
+  print(*i[1], sep='\t')
+  print("")
