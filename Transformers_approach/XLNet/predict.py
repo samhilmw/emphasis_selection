@@ -1,5 +1,5 @@
 # Redirecting Deprication Warnings to /dev/null
-import sys, platform
+import sys, platform, os
 from argparse import ArgumentParser
 
 sv_std = sys.stderr
@@ -12,7 +12,7 @@ elif os_name == "Linux":
 sys.stderr = f
 
 # Importing modules
-import torch, codecs, os
+import torch, codecs
 from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.utils.data import TensorDataset, DataLoader, SequentialSampler
